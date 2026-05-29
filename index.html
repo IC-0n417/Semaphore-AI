@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Семафор</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <style>
+    body { margin: 0; font-family: sans-serif; text-align: center; background: #121212; color: white; padding-bottom: 30px; }
+    h2 { 
+  margin: 15px 0 10px 0; 
+  font-size: 28px; 
+  color: #ffcc00;
+  
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-transform: uppercase; 
+  letter-spacing: 3px; 
+  display: inline-block;
+  transform: scaleY(1.3);      
+}
+
+    
+    #letter-view { font-size: 72px; font-weight: bold; color: #ffcc00; margin: 5px 0; height: 85px; line-height: 85px; text-shadow: 0 0 10px rgba(255,204,0,0.5); }
+    
+    #progress-bar { width: 60%; background: #333; height: 8px; margin: 0 auto 10px auto; border-radius: 4px; overflow: hidden; display: none; }
+    #progress-fill { width: 0%; height: 100%; background: #ffcc00; transition: width 0.1s linear; }
+
+    #word-box { background: #1e1e1e; border: 2px solid #333; border-radius: 8px; width: 90%; max-width: 500px; margin: 10px auto; padding: 12px; }
+    #word-label { font-size: 14px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; }
+    #word { font-size: 28px; font-weight: bold; color: #00ffcc; min-height: 35px; word-wrap: break-word; }
+
+    
+    #buttons-container {
+      display: flex;
+      justify-content: center; 
+      gap: 6px;                
+      width: 95%;
+      max-width: 500px;
+      margin: 10px auto;       
+    }
+
+    .btn { 
+      flex: 1;                 
+      padding: 10px 2px;       
+      font-size: 11px;         
+      border: none !important;
+      outline: none;
+      border-radius: 6px; 
+      font-weight: bold; 
+      color: white; 
+      cursor: pointer; 
+      white-space: nowrap;     
+    }
+
+    .btn-main { background: #007bff; }
+    .btn-space { background: #28a745; }
+    .btn-clear { background: #dc3545; }
+    .btn-back { background: #6c757d; }
+    
+    #canvas { width: 100%; max-width: 500px; background: #000; border-radius: 8px; }
+    .mirror { transform: scaleX(-1); }
+    #output { font-size: 14px; color: #bbb; margin: 5px; min-height: 35px; font-family: monospace; }
+  </style>
+
+</head>
+<body>
+
+  <h2>Семафорчик 🚩🚩🚩</h2>
+  
+  <div id="letter-view">-</div>
+  
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+
+  <div id="word-box">
+    <div id="word-label">Собираем по буковкам</div>
+    <div id="word"></div>
+  </div>
+
+  <div id="buttons-container">
+    <button class="btn btn-space" id="spaceBtn">␣ ПРОБЕЛ</button>
+    <button class="btn btn-back" id="backspaceBtn">⌫ СТЕРЕТЬ</button>
+    <button class="btn btn-clear" id="clearBtn">✖ СБРОС</button>
+    <button class="btn btn-main" id="flipBtn">🔄 КАМЕРА</button>
+  </div>
+
+  <div id="output">Загрузка...</div>
+  <canvas id="canvas"></canvas>
+  <video id="video" autoplay playsinline style="display:none;"></video>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
+    const letterView = document.getElementById('letter-view');
+    const wordView = document.getElementById('word');
+    
+    let currentWord = "";
+    let lastDetectedLetter = "";
+    let holdCount = 0;
+    const REQUIRED_HOLD = 10; 
+    let lockLetterToken = false; 
+
+    let useBackCamera = false; 
+    let currentStream = null;
+
+    // Углы для рук (левая рука L, правая рука R)
+    const alphabetTargets = [
+      { letter: "А", leftAngle: 45, rightAngle: 315 },
+      { letter: "Б", leftAngle: 320, rightAngle: 270 },
+      { letter: "В", leftAngle: 0, rightAngle: 270},
+      { letter: "Г", leftAngle: 80, rightAngle: 350 },
+      { letter: "Д", leftAngle: 90, rightAngle: 40 },
+      { letter: "Е/Ё/Э", leftAngle: 5, rightAngle: 240},
+      { letter: "Ж", leftAngle: 85, rightAngle: 230 },
+      { letter: "З", leftAngle: 125, rightAngle: 270 },
+      { letter: "И/Й", leftAngle: 10, rightAngle: 200 },
+      { letter: "К", leftAngle: 110, rightAngle: 55 },
+      { letter: "Л", leftAngle: 40, rightAngle: 230 },
+      { letter: "М", leftAngle: 110, rightAngle: 300 },
+      { letter: "Н", leftAngle: 5, rightAngle: 310 },
+      { letter: "О", leftAngle: 225, rightAngle: 270 },
+      { letter: "П", leftAngle: 75, rightAngle: 205 },
+      { letter: "Р", leftAngle: 170, rightAngle: 270 },
+      { letter: "С", leftAngle: 115, rightAngle: 355 },
+      { letter: "Т", leftAngle: 90, rightAngle: 260 },
+      { letter: "У", leftAngle: 130, rightAngle: 225 },
+      { letter: "Ф", leftAngle: 40, rightAngle: 200 },
+      { letter: "Х", leftAngle: 315, rightAngle: 230 },
+      { letter: "Ц", leftAngle: 40, rightAngle: 270 },
+      { letter: "Ч", leftAngle: 100, rightAngle: 320 },
+      { letter: "Ш", leftAngle: 120, rightAngle: 195 },
+      { letter: "Щ", leftAngle: 170, rightAngle: 230 },
+      { letter: "Ь/Ъ", leftAngle: 100, rightAngle: 320 },
+      { letter: "Ы", leftAngle: 170, rightAngle: 350 },
+      { letter: "Ю", leftAngle: 315, rightAngle: 230 },
+      { letter: "Я", leftAngle: 130, rightAngle: 40 }
+    ];
+
+    const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+    pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+    pose.onResults(onResults);
+
+    async function startCamera() {
+      if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+      canvas.classList.toggle('mirror', !useBackCamera);
+
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: useBackCamera ? "environment" : "user", width: 640, height: 480 }
+        });
+        video.srcObject = currentStream;
+        output.innerText = "Обернись, нет ли там Оскара?";
+        video.onloadedmetadata = () => { canvas.width = video.videoWidth; canvas.height = video.videoHeight; detectFrame(); };
+      } catch (err) { output.innerText = "Ошибка камеры. Проверь разрешения."; }
+    }
+
+    async function detectFrame() { if (video.readyState >= 2) await pose.send({ image: video }); requestAnimationFrame(detectFrame); }
+    document.getElementById('flipBtn').addEventListener('click', () => { useBackCamera = !useBackCamera; startCamera(); });
+
+    function getAngleDiff(a1, a2) {
+      let diff = Math.abs(a1 - a2) % 360;
+      return diff > 180 ? 360 - diff : diff;
+    }
+
+    function onResults(results) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      if (results.poseLandmarks) {
+        const lm = results.poseLandmarks;
+        const leftShoulder = lm[11], leftWrist = lm[15], rightShoulder = lm[12], rightWrist = lm[16];
+
+        drawJoint(leftShoulder); drawJoint(leftWrist); drawJoint(rightShoulder); drawJoint(rightWrist);
+
+        if (leftShoulder.visibility > 0.5 && leftWrist.visibility > 0.5 && rightShoulder.visibility > 0.5 && rightWrist.visibility > 0.5) {
+          
+          let flipX = !useBackCamera ? -1 : 1;
+
+          // Расчет вектора левой руки 
+          let dxL = (leftWrist.x - leftShoulder.x) * flipX;
+          let dyL = (leftWrist.y - leftShoulder.y); // Y идет вниз в браузере
+          
+          //Логика: Math.atan2(dx, dy) дает 0 - вниз, 90 - право, 180 - вверх, 270 - лево.
+          let leftAngle = Math.atan2(dxL, dyL) * 180 / Math.PI;
+          if (leftAngle < 0) leftAngle += 360;
+
+          // Расчет вектора правой руки
+          let dxR = (rightWrist.x - rightShoulder.x) * flipX;
+          let dyR = (rightWrist.y - rightShoulder.y);
+          
+          let rightAngle = Math.atan2(dxR, dyR) * 180 / Math.PI;
+          if (rightAngle < 0) rightAngle += 360;
+
+          // Поиск буквы
+          let bestLetter = null;
+          let minError = Infinity;
+          const TOLERANCE = 25; // Чувствительность совпадения углов
+
+          for (let target of alphabetTargets) {
+            let errL = getAngleDiff(leftAngle, target.leftAngle);
+            let errR = getAngleDiff(rightAngle, target.rightAngle);
+            
+            if (errL <= TOLERANCE && errR <= TOLERANCE) {
+              let totalErr = errL + errR;
+              if (totalErr < minError) {
+                minError = totalErr;
+                bestLetter = target.letter;
+              }
+            }
+          }
+
+          // Вывод текущих градусов на экран для отладки
+          output.innerHTML = `Левая рука (L): ${Math.round(leftAngle)}° | Правая рука (R): ${Math.round(rightAngle)}°`;
+
+          if (bestLetter) {
+            letterView.innerText = bestLetter;
+            
+            if (bestLetter === lastDetectedLetter) {
+              if (!lockLetterToken) {
+                holdCount++;
+                document.getElementById('progress-bar').style.display = 'block';
+                document.getElementById('progress-fill').style.width = (holdCount / REQUIRED_HOLD * 100) + '%';
+                
+                if (holdCount >= REQUIRED_HOLD) {
+                  currentWord += bestLetter.split('/')[0];
+                  wordView.innerText = currentWord;
+                  holdCount = 0;
+                  lockLetterToken = true;
+                  flashWordBox();
+                }
+              }
+            } else {
+              lastDetectedLetter = bestLetter; holdCount = 0; lockLetterToken = false;
+            }
+          } else {
+            letterView.innerText = "?";
+            resetProgress();
+          }
+        } else {
+          letterView.innerText = "-"; output.innerHTML = "Отойди дальше! Плечи и кисти должны быть видны.";
+          resetProgress();
+        }
+      }
+    }
+
+    function resetProgress() {
+      holdCount = 0; lockLetterToken = false; lastDetectedLetter = "";
+      document.getElementById('progress-bar').style.display = 'none';
+      document.getElementById('progress-fill').style.width = '0%';
+    }
+
+    function flashWordBox() {
+      wordView.style.color = '#fff';
+      setTimeout(() => { wordView.style.color = '#00ffcc'; }, 300);
+    }
+
+    function drawJoint(p) {
+      if(p.visibility > 0.5) {
+        ctx.beginPath(); ctx.arc(p.x * canvas.width, p.y * canvas.height, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = "#00ffcc"; ctx.fill();
+      }
+    }
+
+    document.getElementById('spaceBtn').addEventListener('click', () => { currentWord += " "; wordView.innerText = currentWord; });
+    document.getElementById('backspaceBtn').addEventListener('click', () => { currentWord = currentWord.slice(0, -1); wordView.innerText = currentWord; });
+    document.getElementById('clearBtn').addEventListener('click', () => { currentWord = ""; wordView.innerText = currentWord; });
+
+    startCamera();
+  </script>
+</body>
+</html>
