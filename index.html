@@ -65,7 +65,7 @@
 </head>
 <body>
 
-  <h2>Семафорчик 🚩🚩🚩</h2>
+  <h2>🚩 Семафорчик 🚩</h2>
   
   <div id="letter-view">-</div>
   
@@ -98,7 +98,7 @@
     let currentWord = "";
     let lastDetectedLetter = "";
     let holdCount = 0;
-    const REQUIRED_HOLD = 5; 
+    const REQUIRED_HOLD = 8; 
     let lockLetterToken = false; 
 
     let useBackCamera = false; 
@@ -175,7 +175,7 @@
 
         if (leftShoulder.visibility > 0.5 && leftWrist.visibility > 0.5 && rightShoulder.visibility > 0.5 && rightWrist.visibility > 0.5) {
           
-          let flipX = !useBackCamera ? -1 : 1;
+          let flipX = 1;
 
           // Расчет вектора левой руки 
           let dxL = (leftWrist.x - leftShoulder.x) * flipX;
