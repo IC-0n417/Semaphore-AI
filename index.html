@@ -59,26 +59,32 @@
     #word { font-size: 28px; font-weight: bold; color: #00ffcc; min-height: 35px; word-wrap: break-word; }
     
     #buttons-container { display: flex; justify-content: center; gap: 6px; width: 95%; max-width: 500px; margin: 10px auto; }
-    .btn { flex: 1; padding: 10px 2px; font-size: 11px; border: none !important; outline: none; border-radius: 6px; font-weight: bold; color: white; cursor: pointer; white-space: nowrap; }
+    .btn { flex: 1; padding: 10px 2px; font-size: 11px; border: none !important; outline: none; border-radius: 6px; font-weight: bold; color: white; cursor: pointer; white-space: nowrap; transition: 0.2s; }
     .btn-main { background: #007bff; }
     .btn-space { background: #28a745; }
     .btn-clear { background: #dc3545; }
     .btn-back { background: #6c757d; }
+    .btn-game { background: #ff5722; width: 90%; max-width: 500px; margin: 0 auto 10px auto; display: block; padding: 12px; font-size: 14px; }
     
     #canvas { width: 100%; max-width: 500px; background: #000; border-radius: 8px; }
     .mirror { transform: scaleX(-1); }
     #output { font-size: 14px; color: #bbb; margin: 5px; min-height: 35px; font-family: monospace; }
+
+    /* СТИЛИ ИГРЫ */
+    #game-board { display: none; background: #2a2a2a; border: 2px dashed #ffcc00; border-radius: 8px; width: 90%; max-width: 500px; margin: 10px auto; padding: 15px; box-sizing: border-box; }
+    #game-target { font-size: 36px; font-weight: bold; color: #fff; letter-spacing: 8px; margin: 10px 0; }
+    #game-message { color: #00ffcc; font-size: 14px; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <div id="loader">
     <div class="spinner"></div>
-    <h2>МОРСКОЙ ОТРЯД</h2>
-    <div class="loader-text">Поднимаем паруса нейросети...</div>
+    <h2>АРТЕК</h2>
+    <div class="loader-text">Подготавливаем флажки...</div>
   </div>
 
-  <h2>🚩 Семафорчик 🚩</h2>
+  <h2>🚩 Семафор 🚩</h2>
   
   <div id="tabs-container">
     <button class="tab-btn active" onclick="openTab('main-tab', this)">Семафор</button>
@@ -88,6 +94,13 @@
   <div id="main-tab" class="tab-content" style="display: block;">
     <div id="letter-view">-</div>
     <div id="progress-bar"><div id="progress-fill"></div></div>
+
+    <button class="btn btn-game" id="gameToggleBtn">🎮 РЕЖИМ ОБУЧЕНИЯ: ВЫКЛ</button>
+    <div id="game-board">
+      <div style="color: #aaa; font-size: 12px; text-transform: uppercase;">Собери слово:</div>
+      <div id="game-target">МОРЕ</div>
+      <div id="game-message">Жду первую букву...</div>
+    </div>
 
     <div id="word-box">
       <div id="word-label">Собираем по буковкам</div>
@@ -113,6 +126,8 @@
       <li>Удерживайте позу несколько секунд, пока заполняется желтая полоска.</li>
       <li>Когда полоска заполнится, буква добавится в слово.</li>
     </ul>
+    <h3>Режим обучения</h3>
+    <p>Нажмите оранжевую кнопку «Режим обучения», чтобы превратить тренировку в игру. Приложение само будет загадывать слова, а вам нужно их показать!</p>
     <h3>Управление</h3>
     <p>Используйте кнопки под экраном, чтобы стирать ошибки, ставить пробелы или переключать камеру (если вы с телефона).</p>
   </div>
@@ -142,7 +157,59 @@
 
     let useBackCamera = false; 
     let currentStream = null;
-    let isAiLoaded = false; // Флаг для загрузочного экрана
+    let isAiLoaded = false; 
+
+    // === ЛОГИКА ИГРЫ ===
+    const gameWords = ["КОТ", "МОРЕ", "ФЛОТ", "МАЯК", "НЕБО", "ПОРТ", "ЯКОРЬ", "КРАБ", "ШУМ", "ВОЛНА"];
+    let isGameMode = false;
+    let targetWord = "";
+    let currentLetterIndex = 0;
+
+    const gameToggleBtn = document.getElementById('gameToggleBtn');
+    const gameBoard = document.getElementById('game-board');
+    const gameTarget = document.getElementById('game-target');
+    const gameMessage = document.getElementById('game-message');
+
+    gameToggleBtn.addEventListener('click', () => {
+      isGameMode = !isGameMode;
+      if (isGameMode) {
+        gameToggleBtn.innerText = "🎮 РЕЖИМ ОБУЧЕНИЯ: ВКЛ";
+        gameToggleBtn.style.background = "#28a745";
+        gameBoard.style.display = "block";
+        startNewWord();
+      } else {
+        gameToggleBtn.innerText = "🎮 РЕЖИМ ОБУЧЕНИЯ: ВЫКЛ";
+        gameToggleBtn.style.background = "#ff5722";
+        gameBoard.style.display = "none";
+        currentWord = ""; 
+        wordView.innerText = currentWord;
+      }
+    });
+
+    function startNewWord() {
+      targetWord = gameWords[Math.floor(Math.random() * gameWords.length)];
+      currentLetterIndex = 0;
+      currentWord = "";
+      wordView.innerText = currentWord;
+      updateGameUI();
+      gameMessage.innerText = "Жду первую букву...";
+      gameMessage.style.color = "#00ffcc";
+    }
+
+    function updateGameUI() {
+      let html = "";
+      for (let i = 0; i < targetWord.length; i++) {
+        if (i < currentLetterIndex) {
+          html += `<span style="color: #28a745;">${targetWord[i]}</span>`; // Угаданные зеленым
+        } else if (i === currentLetterIndex) {
+          html += `<span style="color: #ffcc00; text-decoration: underline;">${targetWord[i]}</span>`; // Текущая желтым
+        } else {
+          html += `<span style="color: #555;">${targetWord[i]}</span>`; // Остальные серым
+        }
+      }
+      gameTarget.innerHTML = html;
+    }
+    // ===================
 
     const alphabetTargets = [
       { letter: "А", leftAngle: 45, rightAngle: 315 },
@@ -170,7 +237,7 @@
       { letter: "Ч", leftAngle: 100, rightAngle: 320 },
       { letter: "Ш", leftAngle: 120, rightAngle: 195 },
       { letter: "Щ", leftAngle: 170, rightAngle: 230 },
-      { letter: "Ь/Ъ", leftAngle: 100, rightAngle: 320 },
+      { letter: "Ь/Ъ", leftAngle: 10, rightAngle: 320 },
       { letter: "Ы", leftAngle: 170, rightAngle: 350 },
       { letter: "Ю", leftAngle: 315, rightAngle: 230 },
       { letter: "Я", leftAngle: 130, rightAngle: 40 }
@@ -189,7 +256,7 @@
           video: { facingMode: useBackCamera ? "environment" : "user", width: 640, height: 480 }
         });
         video.srcObject = currentStream;
-        video.play(); // Надежный запуск видео
+        video.play(); 
         
         video.onloadedmetadata = () => { 
           canvas.width = video.videoWidth; 
@@ -198,7 +265,7 @@
         };
       } catch (err) { 
         output.innerText = "Ошибка камеры. Проверь разрешения."; 
-        document.getElementById('loader').style.display = 'none'; // Скрываем лоадер при ошибке
+        document.getElementById('loader').style.display = 'none'; 
       }
     }
 
@@ -217,7 +284,6 @@
     }
 
     function onResults(results) {
-      // Скрываем экран загрузки, как только нейросеть выдала первый результат
       if (!isAiLoaded) {
         document.getElementById('loader').style.display = 'none';
         output.innerText = "Обернись, нет ли там Оскара?";
@@ -235,7 +301,7 @@
 
         if (leftShoulder.visibility > 0.5 && leftWrist.visibility > 0.5 && rightShoulder.visibility > 0.5 && rightWrist.visibility > 0.5) {
           
-          let flipX = 1; // <--- ИСПРАВЛЕННАЯ ФРОНТАЛКА
+          let flipX = 1; 
 
           let dxL = (leftWrist.x - leftShoulder.x) * flipX;
           let dyL = (leftWrist.y - leftShoulder.y); 
@@ -278,7 +344,32 @@
                 document.getElementById('progress-fill').style.width = (holdCount / REQUIRED_HOLD * 100) + '%';
                 
                 if (holdCount >= REQUIRED_HOLD) {
-                  currentWord += bestLetter.split('/')[0];
+                  let detectedChar = bestLetter.split('/')[0];
+
+                  // --- ИНТЕГРАЦИЯ ИГРЫ ПРИ УСПЕШНОМ ЗАХВАТЕ БУКВЫ ---
+                  if (isGameMode) {
+                    if (detectedChar === targetWord[currentLetterIndex]) {
+                      currentWord += detectedChar;
+                      currentLetterIndex++;
+                      updateGameUI();
+                      
+                      if (currentLetterIndex >= targetWord.length) {
+                        gameMessage.innerText = "🎉 СУПЕР! СЛОВО СОБРАНО! 🎉";
+                        gameMessage.style.color = "#ffcc00";
+                        setTimeout(startNewWord, 2500); // пауза перед новым словом
+                      } else {
+                        gameMessage.innerText = "Верно! Давай следующую!";
+                        gameMessage.style.color = "#00ffcc";
+                      }
+                    } else {
+                      gameMessage.innerText = "Не та буква, пробуй еще!";
+                      gameMessage.style.color = "#dc3545";
+                    }
+                  } else {
+                    currentWord += detectedChar;
+                  }
+                  // ---------------------------------------------------
+
                   wordView.innerText = currentWord;
                   holdCount = 0;
                   lockLetterToken = true;
