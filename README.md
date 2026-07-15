@@ -39,5 +39,3 @@ python -m http.server 8000
 ```
 
 Откройте [http://localhost:8000](http://localhost:8000) и разрешите доступ к камере.
-
-Проект не требует сборки и готов к публикации через GitHub Pages.
