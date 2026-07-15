@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f6f8">
-  <meta name="description" content="Распознавание русской семафорной азбуки с помощью камеры и анализа позы.">
-  <title>Semaphore AI — распознавание семафорной азбуки</title>
+  <meta name="theme-color" content="#090c11">
+  <meta name="description" content="Распознавание русской семафорной азбуки с помощью камеры.">
+  <title>Semaphore AI</title>
   <link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/css/styles.css">
   <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
@@ -13,220 +13,97 @@
 </head>
 <body>
   <div id="loader" class="loader" role="status" aria-live="polite">
-    <div class="loader__mark" aria-hidden="true">
-      <span></span>
-      <span></span>
-    </div>
+    <div class="loader__mark" aria-hidden="true"><span></span><span></span></div>
     <div class="loader__spinner" aria-hidden="true"></div>
     <strong>Semaphore AI</strong>
-    <span id="loaderText">Подключение камеры и модели распознавания</span>
+    <span id="loaderText">Подключение камеры</span>
   </div>
 
-  <header class="app-header">
-    <div class="container app-header__inner">
-      <a class="brand" href="#" aria-label="Semaphore AI — главная">
-        <span class="brand__mark" aria-hidden="true">
-          <span></span>
-          <span></span>
-        </span>
-        <span class="brand__name">Semaphore <b>AI</b></span>
-      </a>
-
-      <nav id="tabs-container" class="tabs" aria-label="Разделы приложения" role="tablist">
-        <button class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="main-tab" data-tab="main-tab">
-          Распознавание
-        </button>
-        <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="help-tab" data-tab="help-tab">
-          Инструкция
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <main class="container page-shell">
-    <section id="main-tab" class="tab-content" role="tabpanel">
-      <div class="page-intro">
-        <div>
-          <p class="eyebrow">Компьютерное зрение</p>
-          <h1>Распознавание семафорных сигналов</h1>
-          <p class="page-intro__lead">Покажите знак перед камерой. Система определит положение рук и преобразует его в букву.</p>
-        </div>
+  <div class="app">
+    <header class="app-header">
+      <div class="topbar">
+        <a class="brand" href="#" aria-label="Semaphore AI — главная">
+          <span class="brand__mark" aria-hidden="true"><span></span><span></span></span>
+          <span>Semaphore <b>AI</b></span>
+        </a>
         <div id="systemStatus" class="system-status" data-state="loading" role="status" aria-live="polite">
-          <span class="system-status__dot" aria-hidden="true"></span>
-          <span id="systemStatusText">Инициализация</span>
+          <span aria-hidden="true"></span>
+          <span id="systemStatusText">Подключение</span>
         </div>
       </div>
 
-      <div class="workbench">
-        <section class="panel camera-panel" aria-labelledby="cameraTitle">
-          <div class="panel__header">
-            <div>
-              <span class="panel__index">01</span>
-              <h2 id="cameraTitle">Камера</h2>
-            </div>
-            <span class="panel__meta">Анализ позы в реальном времени</span>
-          </div>
+      <nav class="tabs" aria-label="Разделы приложения" role="tablist">
+        <button class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="main-tab" data-tab="main-tab">Распознавание</button>
+        <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="help-tab" data-tab="help-tab">Инструкция</button>
+      </nav>
+    </header>
 
-          <div class="camera-viewport">
-            <canvas id="canvas" width="640" height="480" aria-label="Изображение с камеры и контрольные точки рук"></canvas>
+    <main>
+      <section id="main-tab" class="tab-content" role="tabpanel">
+        <div class="letter-block">
+          <div id="letter-view" aria-live="polite">—</div>
+          <p id="captureHint">Встаньте перед камерой</p>
+          <div id="progress-bar" class="progress-bar" role="progressbar" aria-label="Фиксация знака" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="progress-fill"></div>
+          </div>
+        </div>
+
+        <button class="training-toggle" type="button" id="gameToggleBtn" aria-pressed="false">
+          <span>
+            <strong>Тренировка</strong>
+            <small id="gameModeState">Выключена</small>
+          </span>
+          <span class="switch" aria-hidden="true"><span></span></span>
+        </button>
+
+        <div id="game-board" class="game-board" hidden>
+          <span class="game-board__label">Покажите слово</span>
+          <div id="game-target" aria-label="Заданное слово">МОРЕ</div>
+          <div id="game-message" role="status" aria-live="polite">Покажите первую букву</div>
+        </div>
+
+        <section id="word-box" class="word-box" aria-labelledby="word-label">
+          <span id="word-label">Результат</span>
+          <div id="word" aria-live="polite" data-placeholder="Распознанный текст появится здесь"></div>
+        </section>
+
+        <div class="actions" aria-label="Редактирование результата">
+          <button type="button" id="spaceBtn"><span aria-hidden="true">␠</span>Пробел</button>
+          <button type="button" id="backspaceBtn"><span aria-hidden="true">⌫</span>Удалить</button>
+          <button type="button" id="clearBtn" class="danger"><span aria-hidden="true">×</span>Очистить</button>
+          <button type="button" id="flipBtn"><span aria-hidden="true">↻</span>Камера</button>
+        </div>
+
+        <section class="camera">
+          <div class="camera__status">
+            <span aria-hidden="true"></span>
+            <p id="output" aria-live="polite">Подготовка системы…</p>
+          </div>
+          <div class="camera__viewport">
+            <canvas id="canvas" width="640" height="480" aria-label="Изображение с камеры"></canvas>
             <div id="cameraPlaceholder" class="camera-placeholder">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 8.5 18.6 6v12L15 15.5M5 7h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/>
+                <path d="M15 8.5 18.5 6v12L15 15.5M5 7h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/>
               </svg>
-              <strong id="cameraPlaceholderTitle">Ожидание доступа к камере</strong>
-              <span id="cameraPlaceholderText">Разрешите использование камеры в браузере</span>
+              <strong id="cameraPlaceholderTitle">Ожидание камеры</strong>
+              <span id="cameraPlaceholderText">Разрешите доступ в браузере</span>
             </div>
-          </div>
-
-          <div class="camera-status">
-            <span class="camera-status__icon" aria-hidden="true"></span>
-            <p id="output" aria-live="polite">Подготовка системы распознавания…</p>
-          </div>
-          <div class="privacy-note">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6l-7-3Z"/>
-              <path d="m9.5 12 1.7 1.7 3.6-3.8"/>
-            </svg>
-            Видео обрабатывается локально в браузере и не сохраняется.
           </div>
         </section>
+      </section>
 
-        <aside class="control-stack" aria-label="Результаты распознавания">
-          <section class="panel recognition-card" aria-labelledby="recognitionTitle">
-            <div class="section-label">
-              <span class="panel__index">02</span>
-              <h2 id="recognitionTitle">Распознанный знак</h2>
-            </div>
-            <div id="letter-view" aria-live="polite">—</div>
-            <p id="captureHint" class="capture-hint">Займите положение перед камерой</p>
-            <div id="progress-bar" class="progress-bar" role="progressbar" aria-label="Фиксация знака" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div id="progress-fill"></div>
-            </div>
-          </section>
-
-          <section id="word-box" class="panel result-card" aria-labelledby="word-label">
-            <div class="result-card__header">
-              <div>
-                <span class="panel__index">03</span>
-                <h2 id="word-label">Результат</h2>
-              </div>
-              <span>Текст из распознанных знаков</span>
-            </div>
-            <div id="word" aria-live="polite" data-placeholder="Здесь появится распознанный текст"></div>
-          </section>
-
-          <div id="buttons-container" class="action-grid" aria-label="Редактирование результата">
-            <button class="action-button" type="button" id="spaceBtn">
-              <span class="action-button__icon" aria-hidden="true">␠</span>
-              <span>Пробел</span>
-            </button>
-            <button class="action-button" type="button" id="backspaceBtn">
-              <span class="action-button__icon" aria-hidden="true">⌫</span>
-              <span>Удалить знак</span>
-            </button>
-            <button class="action-button action-button--danger" type="button" id="clearBtn">
-              <span class="action-button__icon" aria-hidden="true">×</span>
-              <span>Очистить</span>
-            </button>
-            <button class="action-button" type="button" id="flipBtn">
-              <svg class="action-button__svg" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 8V4m0 0h4M4 4l4 4M20 16v4m0 0h-4m4 0-4-4M15 5h2a3 3 0 0 1 3 3v2M9 19H7a3 3 0 0 1-3-3v-2"/>
-              </svg>
-              <span>Сменить камеру</span>
-            </button>
-          </div>
-
-          <section class="panel training-card" aria-labelledby="trainingTitle">
-            <button class="mode-toggle" type="button" id="gameToggleBtn" aria-pressed="false">
-              <span class="mode-toggle__copy">
-                <span class="panel__index">04</span>
-                <strong id="trainingTitle">Режим тренировки</strong>
-                <small>Последовательно покажите буквы заданного слова</small>
-              </span>
-              <span class="mode-toggle__control" aria-hidden="true"><span></span></span>
-              <span id="gameModeState" class="mode-toggle__state">Выключен</span>
-            </button>
-
-            <div id="game-board" class="game-board" hidden>
-              <div class="game-board__header">
-                <span>Задание</span>
-                <span>Покажите слово по буквам</span>
-              </div>
-              <div id="game-target" aria-label="Заданное слово">МОРЕ</div>
-              <div id="game-message" role="status" aria-live="polite">Покажите первую букву</div>
-            </div>
-          </section>
-        </aside>
-      </div>
-    </section>
-
-    <section id="help-tab" class="tab-content" role="tabpanel" hidden>
-      <div class="page-intro page-intro--help">
-        <div>
-          <p class="eyebrow">Инструкция</p>
-          <h1>Как работать с распознаванием</h1>
-          <p class="page-intro__lead">Для устойчивого результата настройте кадр и выполняйте знаки последовательно.</p>
-        </div>
-      </div>
-
-      <div class="help-layout">
-        <section class="panel steps-card" aria-labelledby="stepsTitle">
-          <div class="help-heading">
-            <span class="panel__index">01</span>
-            <h2 id="stepsTitle">Порядок работы</h2>
-          </div>
-          <ol class="steps-list">
-            <li>
-              <span>1</span>
-              <div><strong>Разрешите доступ к камере</strong><p>При первом запуске браузер запросит разрешение. Видеопоток нужен только для анализа позы.</p></div>
-            </li>
-            <li>
-              <span>2</span>
-              <div><strong>Расположитесь в центре кадра</strong><p>Плечи, локти и кисти должны полностью попадать в изображение.</p></div>
-            </li>
-            <li>
-              <span>3</span>
-              <div><strong>Покажите семафорный знак</strong><p>Разведите руки под нужными углами и сохраняйте положение до заполнения индикатора.</p></div>
-            </li>
-            <li>
-              <span>4</span>
-              <div><strong>Проверьте результат</strong><p>Зафиксированная буква появится в поле результата. Текст можно отредактировать кнопками управления.</p></div>
-            </li>
-          </ol>
-        </section>
-
-        <div class="help-sidebar">
-          <section class="panel info-card" aria-labelledby="conditionsTitle">
-            <div class="help-heading">
-              <span class="panel__index">02</span>
-              <h2 id="conditionsTitle">Условия распознавания</h2>
-            </div>
-            <ul class="check-list">
-              <li>Равномерное освещение без яркого света за спиной</li>
-              <li>Расстояние до камеры примерно 1,5–2 метра</li>
-              <li>Свободная область вокруг рук по краям кадра</li>
-              <li>Неподвижное положение во время фиксации буквы</li>
-            </ul>
-          </section>
-
-          <section class="panel info-card info-card--accent" aria-labelledby="trainingHelpTitle">
-            <div class="help-heading">
-              <span class="panel__index">03</span>
-              <h2 id="trainingHelpTitle">Тренировка</h2>
-            </div>
-            <p>Включите режим тренировки на экране распознавания. Система предложит слово и поочередно выделит буквы, которые необходимо показать.</p>
-          </section>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="app-footer">
-    <div class="container">
-      <span>Semaphore AI</span>
-      <span>Распознавание русской семафорной азбуки</span>
-    </div>
-  </footer>
+      <section id="help-tab" class="tab-content help" role="tabpanel" hidden>
+        <h1>Как пользоваться</h1>
+        <ol>
+          <li><span>1</span><p>Разрешите браузеру доступ к камере.</p></li>
+          <li><span>2</span><p>Встаньте так, чтобы плечи и кисти были полностью видны.</p></li>
+          <li><span>3</span><p>Покажите знак и удерживайте его до заполнения полосы.</p></li>
+          <li><span>4</span><p>Буква автоматически добавится в результат.</p></li>
+        </ol>
+        <p class="help__note">Для стабильной работы используйте равномерное освещение и расстояние до камеры около двух метров.</p>
+      </section>
+    </main>
+  </div>
 
   <video id="video" autoplay playsinline muted hidden></video>
 </body>

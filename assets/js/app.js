@@ -179,7 +179,7 @@ function startNewWord() {
 gameToggleBtn.addEventListener("click", () => {
   isGameMode = !isGameMode;
   gameToggleBtn.setAttribute("aria-pressed", String(isGameMode));
-  gameModeState.textContent = isGameMode ? "Включен" : "Выключен";
+  gameModeState.textContent = isGameMode ? "Включена" : "Выключена";
   gameBoard.hidden = !isGameMode;
 
   if (newWordTimer) {
@@ -225,7 +225,7 @@ function addDetectedCharacter(bestLetter) {
 
   if (isGameMode) {
     if (detectedCharacter !== targetWord[currentLetterIndex]) {
-      setGameMessage("Распознана другая буква. Повторите знак", "error");
+      setGameMessage("Другая буква. Повторите", "error");
       return;
     }
 
@@ -234,10 +234,10 @@ function addDetectedCharacter(bestLetter) {
     updateGameUI();
 
     if (currentLetterIndex >= targetWord.length) {
-      setGameMessage("Слово собрано. Следующее задание через несколько секунд", "success");
+      setGameMessage("Слово собрано", "success");
       newWordTimer = window.setTimeout(startNewWord, 2500);
     } else {
-      setGameMessage("Буква принята. Покажите следующую", "success");
+      setGameMessage("Верно. Следующая буква", "success");
     }
   } else {
     currentWord += detectedCharacter;
@@ -253,7 +253,7 @@ function onResults(results) {
     hideLoader();
     hideCameraPlaceholder();
     setSystemStatus("ready", "Система готова");
-    output.textContent = "Камера подключена. Встаньте в центр кадра и покажите знак.";
+    output.textContent = "Камера подключена";
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -261,8 +261,8 @@ function onResults(results) {
 
   if (!results.poseLandmarks) {
     letterView.textContent = "—";
-    output.textContent = "Человек не обнаружен. Встаньте перед камерой в полный рост.";
-    resetProgress("Ожидание человека в кадре");
+    output.textContent = "Человек не обнаружен";
+    resetProgress("Встаньте перед камерой");
     return;
   }
 
@@ -282,8 +282,8 @@ function onResults(results) {
 
   if (!armsAreVisible) {
     letterView.textContent = "—";
-    output.textContent = "Плечи или кисти находятся вне кадра. Увеличьте расстояние до камеры.";
-    resetProgress("Плечи и кисти должны быть полностью видны");
+    output.textContent = "Руки находятся вне кадра";
+    resetProgress("Отойдите немного дальше");
     return;
   }
 
@@ -314,11 +314,11 @@ function onResults(results) {
     }
   });
 
-  output.textContent = `Поза определена · левая рука ${Math.round(leftAngle)}° · правая рука ${Math.round(rightAngle)}°`;
+  output.textContent = "Поза определена";
 
   if (!bestLetter) {
     letterView.textContent = "—";
-    resetProgress("Знак не определен. Скорректируйте положение рук");
+    resetProgress("Скорректируйте положение рук");
     return;
   }
 
@@ -329,25 +329,25 @@ function onResults(results) {
     holdCount = 0;
     lockLetterToken = false;
     updateProgress(0);
-    captureHint.textContent = "Удерживайте положение для фиксации";
+    captureHint.textContent = "Удерживайте знак";
     return;
   }
 
   if (lockLetterToken) {
-    captureHint.textContent = "Знак зафиксирован. Измените положение рук";
+    captureHint.textContent = "Знак добавлен. Смените позу";
     return;
   }
 
   holdCount += 1;
   updateProgress(holdCount / REQUIRED_HOLD * 100);
-  captureHint.textContent = "Удерживайте положение для фиксации";
+  captureHint.textContent = "Удерживайте знак";
 
   if (holdCount >= REQUIRED_HOLD) {
     addDetectedCharacter(bestLetter);
     holdCount = 0;
     lockLetterToken = true;
     updateProgress(100);
-    captureHint.textContent = "Знак зафиксирован. Измените положение рук";
+    captureHint.textContent = "Знак добавлен. Смените позу";
   }
 }
 
