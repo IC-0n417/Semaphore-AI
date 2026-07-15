@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Морская флотилия Артека</title>
+  <desc id="desc">Мачта с сигнальными флагами и волнами</desc>
+  <defs>
+    <linearGradient id="bg" x1="18" y1="14" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1b304a"/>
+      <stop offset="1" stop-color="#0b1727"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="32" y1="20" x2="94" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe171"/>
+      <stop offset="1" stop-color="#f5c542"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="3" width="122" height="122" rx="30" fill="url(#bg)"/>
+  <rect x="4" y="4" width="120" height="120" rx="29" fill="none" stroke="#f5c542" stroke-opacity=".4" stroke-width="2"/>
+  <path d="M64 22v67" stroke="#edf4ff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M64 27 103 42 64 57V27Z" fill="url(#gold)"/>
+  <path d="m64 45-38 15 38 15V45Z" fill="#28d2b1"/>
+  <path d="M37 78c7 9 47 9 54 0" fill="none" stroke="#28d2b1" stroke-width="6" stroke-linecap="round"/>
+  <path d="M24 95c13-8 26 8 39 0 13-8 27 8 41 0M24 108c13-8 26 8 39 0 13-8 27 8 41 0" fill="none" stroke="#edf4ff" stroke-linecap="round" stroke-width="5" opacity=".9"/>
+</svg>

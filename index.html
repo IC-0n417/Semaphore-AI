@@ -1,110 +1,249 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090c11">
-  <meta name="description" content="Распознавание русской семафорной азбуки с помощью камеры.">
-  <title>Semaphore AI</title>
-  <link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/css/styles.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-  <script defer src="./assets/js/app.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Семафор — тренажёр Артека</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <meta name="theme-color" content="#07111f" />
+  <link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./assets/css/styles.css" />
 </head>
 <body>
-  <div id="loader" class="loader" role="status" aria-live="polite">
-    <div class="loader__mark" aria-hidden="true"><span></span><span></span></div>
-    <div class="loader__spinner" aria-hidden="true"></div>
-    <strong>Semaphore AI</strong>
-    <span id="loaderText">Подключение камеры</span>
+  <div class="loader" id="loader">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <h2 class="loader-title">Артек • Семафор</h2>
+      <div class="hint" id="loaderText">Запускаем камеру и модель распознавания…</div>
+    </div>
   </div>
 
-  <div class="app">
-    <header class="app-header">
-      <div class="topbar">
-        <a class="brand" href="#" aria-label="Semaphore AI — главная">
-          <span class="brand__mark" aria-hidden="true"><span></span><span></span></span>
-          <span>Semaphore <b>AI</b></span>
-        </a>
-        <div id="systemStatus" class="system-status" data-state="loading" role="status" aria-live="polite">
-          <span aria-hidden="true"></span>
-          <span id="systemStatusText">Подключение</span>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-label="Логотип морской флотилии Артека">
+          <img id="flotiliaLogo" src="./assets/images/logo-flotilia.svg" alt="Логотип морской флотилии Артека" />
+          <div class="logo-fallback" id="logoFallback" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M32 7v38" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              <path d="M18 24c5 9 23 9 28 0" stroke="#28d2b1" stroke-width="4" stroke-linecap="round"/>
+              <path d="M17 47h30" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              <path d="M32 12l19 8-19 8V12Z" fill="currentColor"/>
+              <path d="M32 28L13 20l19-8v16Z" fill="#28d2b1"/>
+              <path d="M10 53c8-4 16 4 24 0 8-4 13 0 20 1" stroke="#edf4ff" stroke-width="3" stroke-linecap="round" opacity=".82"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h1>Артек <span>•</span> Семафор</h1>
+          <div class="subtitle">тренажёр флажной азбуки</div>
         </div>
       </div>
 
-      <nav class="tabs" aria-label="Разделы приложения" role="tablist">
-        <button class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="main-tab" data-tab="main-tab">Распознавание</button>
-        <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="help-tab" data-tab="help-tab">Инструкция</button>
+      <nav class="tabs" aria-label="Разделы">
+        <button class="tab-btn active" data-tab="mainTab" type="button">Показ</button>
+        <button class="tab-btn" data-tab="readingTab" type="button">Чтение</button>
+        <button class="tab-btn" data-tab="ratingTab" type="button">Рейтинг</button>
+        <button class="tab-btn" data-tab="helpTab" type="button">Справка</button>
       </nav>
+
+      <div class="profile-chip">
+        <span id="profileMini">Гость</span>
+        <span class="xp"><span id="xpMini">0</span> XP</span>
+      </div>
     </header>
 
-    <main>
-      <section id="main-tab" class="tab-content" role="tabpanel">
-        <div class="letter-block">
-          <div id="letter-view" aria-live="polite">—</div>
-          <p id="captureHint">Встаньте перед камерой</p>
-          <div id="progress-bar" class="progress-bar" role="progressbar" aria-label="Фиксация знака" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <div id="progress-fill"></div>
-          </div>
-        </div>
-
-        <button class="training-toggle" type="button" id="gameToggleBtn" aria-pressed="false">
-          <span>
-            <strong>Тренировка</strong>
-            <small id="gameModeState">Выключена</small>
-          </span>
-          <span class="switch" aria-hidden="true"><span></span></span>
-        </button>
-
-        <div id="game-board" class="game-board" hidden>
-          <span class="game-board__label">Покажите слово</span>
-          <div id="game-target" aria-label="Заданное слово">МОРЕ</div>
-          <div id="game-message" role="status" aria-live="polite">Покажите первую букву</div>
-        </div>
-
-        <section id="word-box" class="word-box" aria-labelledby="word-label">
-          <span id="word-label">Результат</span>
-          <div id="word" aria-live="polite" data-placeholder="Распознанный текст появится здесь"></div>
-        </section>
-
-        <div class="actions" aria-label="Редактирование результата">
-          <button type="button" id="spaceBtn"><span aria-hidden="true">␠</span>Пробел</button>
-          <button type="button" id="backspaceBtn"><span aria-hidden="true">⌫</span>Удалить</button>
-          <button type="button" id="clearBtn" class="danger"><span aria-hidden="true">×</span>Очистить</button>
-          <button type="button" id="flipBtn"><span aria-hidden="true">↻</span>Камера</button>
-        </div>
-
-        <section class="camera">
-          <div class="camera__status">
-            <span aria-hidden="true"></span>
-            <p id="output" aria-live="polite">Подготовка системы…</p>
-          </div>
-          <div class="camera__viewport">
-            <canvas id="canvas" width="640" height="480" aria-label="Изображение с камеры"></canvas>
-            <div id="cameraPlaceholder" class="camera-placeholder">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 8.5 18.5 6v12L15 15.5M5 7h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/>
-              </svg>
-              <strong id="cameraPlaceholderTitle">Ожидание камеры</strong>
-              <span id="cameraPlaceholderText">Разрешите доступ в браузере</span>
+    <section class="tab-content active" id="mainTab">
+      <div class="workspace">
+        <section class="card camera-card">
+          <div class="camera-shell">
+            <canvas id="canvas"></canvas>
+            <div class="camera-overlay">
+              <div class="badge"><span class="dot" id="statusDot"></span><span id="statusText">Подготовка</span></div>
+              <div class="badge" id="cameraModeBadge">Фронтальная</div>
             </div>
           </div>
         </section>
-      </section>
 
-      <section id="help-tab" class="tab-content help" role="tabpanel" hidden>
-        <h1>Как пользоваться</h1>
-        <ol>
-          <li><span>1</span><p>Разрешите браузеру доступ к камере.</p></li>
-          <li><span>2</span><p>Встаньте так, чтобы плечи и кисти были полностью видны.</p></li>
-          <li><span>3</span><p>Покажите знак и удерживайте его до заполнения полосы.</p></li>
-          <li><span>4</span><p>Буква автоматически добавится в результат.</p></li>
-        </ol>
-        <p class="help__note">Для стабильной работы используйте равномерное освещение и расстояние до камеры около двух метров.</p>
-      </section>
-    </main>
-  </div>
+        <aside class="side-stack">
+          <section class="card recognition-panel">
+            <h2 class="card-title">Распознавание <span id="modeLabel">обычный режим</span></h2>
+            <div class="letter-strip">
+              <div class="letter-view" id="letterView">—</div>
+              <div class="metric-list">
+                <div class="metric">
+                  <div class="metric-label">Текущие градусы</div>
+                  <div class="metric-value angles-big" id="anglesView">L: —° • R: —°</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Для настройки таблицы</div>
+                  <div class="metric-value" id="calibrationView">Ближайшая буква: —</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Точность</div>
+                  <div class="metric-value" id="confidenceView">—</div>
+                </div>
+              </div>
+            </div>
+            <div class="progress" aria-label="Прогресс удержания позы"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="word-box">
+              <div class="word-label" id="wordLabel">Собранный текст</div>
+              <div class="word" id="wordView"></div>
+            </div>
+            <div class="training-line">
+              <button class="btn btn-accent" id="gameToggleBtn" type="button">Тренировка</button>
+              <span class="hint" id="gameHint">вкл/выкл задание слов</span>
+            </div>
+            <div class="game-target" id="gameTarget"></div>
+            <div class="message" id="gameMessage">Встань так, чтобы были видны плечи и кисти.</div>
+          </section>
 
-  <video id="video" autoplay playsinline muted hidden></video>
+          <section class="card card-pad">
+            <h2 class="card-title">Управление</h2>
+            <div class="controls-grid">
+              <button class="btn btn-success" id="spaceBtn" type="button">Пробел</button>
+              <button class="btn btn-ghost" id="backspaceBtn" type="button">Стереть</button>
+              <button class="btn btn-danger" id="clearBtn" type="button">Сброс</button>
+              <button class="btn btn-primary" id="flipBtn" type="button">Камера</button>
+              <button class="btn btn-ghost" id="pauseBtn" type="button">Пауза</button>
+              <button class="btn btn-primary" id="copyBtn" type="button">Копировать</button>
+              <button class="btn btn-ghost" id="copyAnglesBtn" type="button">Углы</button>
+            </div>
+          </section>
+
+          <details class="settings-details">
+            <summary>Тонкая настройка распознавания</summary>
+            <div class="settings-body">
+              <div>
+                <div class="range-row"><span class="metric-label">Время удержания</span><b id="holdValue">700 мс</b></div>
+                <input id="holdRange" type="range" min="350" max="1500" value="700" step="50" />
+              </div>
+              <div>
+                <div class="range-row"><span class="metric-label">Допуск угла</span><b id="toleranceValue">25°</b></div>
+                <input id="toleranceRange" type="range" min="12" max="45" value="25" step="1" />
+              </div>
+            </div>
+          </details>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab-content" id="readingTab">
+      <div class="reading-layout">
+        <section class="card reading-stage">
+          <h2 class="card-title">Чтение семафора <span id="readingStepView">—</span></h2>
+          <div class="semaphore-paper">
+            <canvas id="readingCanvas" width="900" height="640"></canvas>
+          </div>
+          <div class="reading-bottom">
+            <div>
+              <div class="metric-label">Прогресс</div>
+              <div class="reading-dots" id="readingDots"></div>
+            </div>
+            <div class="reading-answer-summary">
+              <div class="metric-label">Ответ</div>
+              <b id="readingTypedView">—</b>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card card-pad">
+          <h2 class="card-title">Проверка <span id="readingModeLabel">по буквам</span></h2>
+          <div class="hint">Смотри только на человечка с флажками. Буква не показывается, пока не включишь подсказку.</div>
+          <div class="mode-switch" aria-label="Тип чтения">
+            <button class="mode-btn active" id="readLettersBtn" type="button">По буквам</button>
+            <button class="mode-btn" id="readWordBtn" type="button">Слово</button>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Эталонные углы</div>
+            <div class="metric-value angles-big" id="readingAngleView">—</div>
+          </div>
+          <div id="letterAnswerBox">
+            <div class="field">
+              <label for="readingLetterInput">Какая это буква?</label>
+              <input class="input" id="readingLetterInput" autocomplete="off" maxlength="2" placeholder="Например: М" />
+            </div>
+            <button class="btn btn-success btn-full btn-spaced" id="checkReadingLetterBtn" type="button">Проверить букву</button>
+          </div>
+          <div class="word-answer-box" id="wordAnswerBox">
+            <div class="field">
+              <label for="readingAnswer">Какое слово получилось?</label>
+              <input class="input" id="readingAnswer" autocomplete="off" placeholder="Например: МОРЕ" />
+            </div>
+            <button class="btn btn-success btn-full btn-spaced" id="checkReadingWordBtn" type="button">Проверить слово</button>
+          </div>
+          <div class="inline-actions">
+            <button class="btn btn-ghost" id="prevReadBtn" type="button">Назад</button>
+            <button class="btn btn-ghost" id="nextReadBtn" type="button">Дальше</button>
+          </div>
+          <div class="inline-actions">
+            <button class="btn btn-primary" id="newReadWordBtn" type="button">Новое слово</button>
+            <button class="btn btn-accent" id="toggleHintBtn" type="button">Подсказка</button>
+          </div>
+          <div class="message" id="readingMessage">Прочитай первую букву.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab-content" id="ratingTab">
+      <div class="grid-2">
+        <section class="card card-pad">
+          <h2 class="card-title">Регистрация <span>на этом устройстве</span></h2>
+          <div class="field">
+            <label for="playerName">Имя или позывной</label>
+            <input class="input" id="playerName" autocomplete="off" placeholder="Например: Ярослав" />
+          </div>
+          <div class="field">
+            <label for="campSelect">Лагерь</label>
+            <select class="select" id="campSelect"></select>
+          </div>
+          <div class="field">
+            <label for="squadInput">Отряд</label>
+            <input class="input" id="squadInput" autocomplete="off" placeholder="Например: 3" />
+          </div>
+          <div class="inline-actions">
+            <button class="btn btn-success" id="saveProfileBtn" type="button">Сохранить</button>
+            <button class="btn btn-ghost" id="resetProfileBtn" type="button">Сбросить</button>
+          </div>
+          <div class="stats-row">
+            <div class="stat-box"><div class="stat-value" id="lettersStat">0</div><div class="stat-label">букв</div></div>
+            <div class="stat-box"><div class="stat-value" id="wordsStat">0</div><div class="stat-label">слов</div></div>
+            <div class="stat-box"><div class="stat-value" id="readStat">0</div><div class="stat-label">чтений</div></div>
+            <div class="stat-box"><div class="stat-value" id="streakStat">0</div><div class="stat-label">серия</div></div>
+          </div>
+        </section>
+
+        <section class="card card-pad">
+          <h2 class="card-title">Рейтинг лагерей <span>локальный зачёт</span></h2>
+          <div class="leaderboard" id="leaderboard"></div>
+          <div class="inline-actions">
+            <button class="btn btn-primary" id="exportBtn" type="button">Экспорт</button>
+            <button class="btn btn-danger" id="resetRatingBtn" type="button">Очистить</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="tab-content" id="helpTab">
+      <div class="grid-2">
+        <section class="card card-pad">
+          <h2 class="card-title">Как пользоваться</h2>
+          <div class="hint">
+            <p><b>Показ:</b> встань перед камерой так, чтобы были видны плечи и кисти. Удерживай позу до заполнения полоски.</p>
+            <p><b>Чтение:</b> сайт рисует семафорного человечка на canvas. Это не картинка, а векторная отрисовка по углам из таблицы, поэтому её легко править.</p>
+            <p><b>Калибровка:</b> смотри текущие градусы L/R и ближайшую букву. Кнопка «Углы» копирует строку для замены в таблице.</p>
+          </div>
+        </section>
+        <section class="card card-pad">
+          <h2 class="card-title">Таблица углов <span>для правки</span></h2>
+          <div class="alphabet-grid" id="alphabetGrid"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <video class="hidden-video" id="video" autoplay playsinline muted></video>
+  <script src="./assets/js/app.js"></script>
 </body>
 </html>
